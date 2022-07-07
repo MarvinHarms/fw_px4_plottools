@@ -47,10 +47,10 @@ function [sysvector, topics, paramvector, params] = ...
             csv_file = ...
                 [fileName '_' topics.(topic_fields{idx_topics}).topic_name...
                 '_' char(num2str(idx_instance)) '.csv'];
-            
-            if exist(csv_file, 'file') == 2
+            csv_file_2 = [csvLocation '\' csv_file];
+            if exist(csv_file_2, 'file') == 2
                 try
-                    csv_data = readtable(csv_file,'ReadVariableNames',true,'Delimiter',',');
+                    csv_data = readtable(csv_file_2,'ReadVariableNames',true,'Delimiter',',');
                     csv_fields = csv_data.Properties.VariableNames;
 
                     message = struct;
@@ -97,14 +97,14 @@ function [sysvector, topics, paramvector, params] = ...
 
     % manually add a value for the commander state with the timestamp of
     % the latest global position estimate as they are used together
-    if topics.commander_state.logged && topics.vehicle_global_position.logged
-       ts_temp = append(sysvector.commander_state_0.main_state,...
-           timeseries(sysvector.commander_state_0.main_state.Data(end),...
-           sysvector.vehicle_global_position_0.lon.Time(end)));
-       ts_temp.DataInfo.Interpolation = tsdata.interpolation('zoh');
-       ts_temp.Name = 'commander_state_0.main_state';
-       sysvector.commander_state_0.main_state = ts_temp;
-    end
+%     if topics.commander_state.logged && topics.vehicle_global_position.logged
+%        ts_temp = append(sysvector.commander_state_0.main_state,...
+%            timeseries(sysvector.commander_state_0.main_state.Data(end),...
+%            sysvector.vehicle_global_position_0.lon.Time(end)));
+%        ts_temp.DataInfo.Interpolation = tsdata.interpolation('zoh');
+%        ts_temp.Name = 'commander_state_0.main_state';
+%        sysvector.commander_state_0.main_state = ts_temp;
+%     end
 
     time_csv_import = toc;
     disp(['INFO: Importing the csv data to matlab took ' char(num2str(time_csv_import)) ' s.'])
@@ -154,12 +154,12 @@ function [sysvector, topics, paramvector, params] = ...
     % *********************************
     % convert the log file to csv files
     % *********************************
-    if (loadingMode~=1) && (loadingMode~=2)
+    if (loadingMode~=1) || (loadingMode~=2)
         fullFileName = [fileLocation pathDelimiter fileName '.ulg'];
         if exist(fullFileName, 'file') ~= 2
             error('Log file does not exist: %s', fullFileName)
         end
-        fullCSVName = [csvLocation pathDelimiter fileName '_params.csv'];
+        fullCSVName = [csvLocation pathDelimiter fileName '_params.csv']
 
         tic;
         system(sprintf('ulog_params -t %s %s', fullFileName, fullCSVName));

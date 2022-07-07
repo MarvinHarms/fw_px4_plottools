@@ -29,21 +29,21 @@ function [ sysvector, paramvector ] = CropPX4LogData(sysvector, paramvector, t_s
         end
     end
     
-    fieldnames_params = fieldnames(paramvector);
-    for idx_par = 1:numel(fieldnames_params)
-        fieldnames_message = fieldnames(paramvector.(fieldnames_params{idx_par}));
-        
-        for idx_msg = 1:numel(fieldnames_message)
-            % copy data info
-            data_info = paramvector.(fieldnames_params{idx_par}).(fieldnames_message{idx_msg}).DataInfo;
-
-            % crop time series
-            ts_temp = getsampleusingtime(paramvector.(fieldnames_params{idx_par}).(fieldnames_message{idx_msg}), t_start, t_end);
-            ts_temp.DataInfo = data_info;
-            paramvector.(fieldnames_params{idx_par}).(fieldnames_message{idx_msg}) = ts_temp;
-        end
-    end
-    
+%     fieldnames_params = fieldnames(paramvector);
+%     for idx_par = 1:numel(fieldnames_params)
+%         fieldnames_message = fieldnames(paramvector.(fieldnames_params{idx_par}));
+%         
+%         for idx_msg = 1:numel(fieldnames_message)
+%             % copy data info
+%             data_info = paramvector.(fieldnames_params{idx_par}).(fieldnames_message{idx_msg}).DataInfo;
+% 
+%             % crop time series
+%             ts_temp = getsampleusingtime(paramvector.(fieldnames_params{idx_par}).(fieldnames_message{idx_msg}), t_start, t_end);
+%             ts_temp.DataInfo = data_info;
+%             paramvector.(fieldnames_params{idx_par}).(fieldnames_message{idx_msg}) = ts_temp;
+%         end
+%     end
+%     
     disp('INFO: Finshed cropping the log data.')
 end
 

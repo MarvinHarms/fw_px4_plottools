@@ -71,7 +71,7 @@ generatePlots = true;
 
 % only plot the logged data from t_start to t_end. If one of them is set to
 % NaN all the logged data is plotted [s].
-t_start = 250;
+t_start = 2;
 t_end = 500;
 
 % change topic names or add new topics in the setupTopics function.

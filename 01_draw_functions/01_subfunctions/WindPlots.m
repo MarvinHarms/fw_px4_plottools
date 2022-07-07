@@ -2,6 +2,7 @@ function WindPlots(sysvector, topics, plotvector)
 % Display the wind data.
 if (~topics.wind_estimate.logged || ~topics.airspeed.logged || ...
     ~topics.vehicle_attitude.logged || ~topics.vehicle_local_position.logged)
+    disp("Could not open Wind files");
     return
 end
 
@@ -58,7 +59,7 @@ if plotvector.plotAirSpeedVector
     [vair_x, vair_y, vair_z] = RotateVector(q_0.Data, q_1.Data, q_2.Data,...
         q_3.Data, airspeed.Data, airspeed.Data*0.0, airspeed.Data*0.0);
     quiver3(pos_x.Data, pos_y.Data, pos_z.Data,...
-            vair_x, vair_y, -vair_z, 0);
+            vair_x, vair_y, -vair_z, 2);
 end
 if plotvector.plotGroundSpeedVector && plotvector.plotAirSpeedVector
     legend('pos','v_{wind}','v_{gnd}', 'v_{air}');
