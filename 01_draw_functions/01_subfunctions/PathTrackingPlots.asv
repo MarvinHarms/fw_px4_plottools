@@ -135,7 +135,8 @@ title('acceleration tracking error');
 % link the time axis
 linkaxes([plot_1,plot_2,plot_3],'x');
 
-
+% export the sysvector in a form useable for the python plane animation:
+ctrlX = [];
 
 
 end
