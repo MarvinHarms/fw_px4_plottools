@@ -32,7 +32,7 @@ addpath(genpath('08_analysis_tools'));
 % ************************************************************************
 
 % The log file name, no file specifier required
-fileName = 'log_33_2022-7-28-12-55-42'; % 12_23_53, 13_22_34, log_17_2022-6-30-11-42-36, log_17_2022-6-30-11-42-36, log_26_2022-7-14-10-43-18, log_27_2022-7-14-11-21-50
+fileName = 'log_43_2022-8-21-16-12-48'; %'log_43_2022-8-21-16-12-48'; %'log_33_2022-7-28-12-55-42'; % 12_23_53, 13_22_34, log_17_2022-6-30-11-42-36, log_17_2022-6-30-11-42-36, log_26_2022-7-14-10-43-18, log_27_2022-7-14-11-21-50
 
 % The log file location, only required when converting a .ulg file. All
 % .csv files are supposed to be in 05_csv_files, and all .mat files are
@@ -72,7 +72,7 @@ generatePlots = true;
 % only plot the logged data from t_start to t_end. If one of them is set to
 % NaN all the logged data is plotted [s].
 t_start = 250;%350
-t_end = 725;%430
+t_end = 750;%430
 
 % change topic names or add new topics in the setupTopics function.
 

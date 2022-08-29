@@ -9,9 +9,23 @@ function SoaringWindPlots(sysvector, topics)
     else
         reconstruct = true;
     end
-    beta_scaling = 0.0;
-    aoa_offset = -0.05;
+    
+    solve_calibration = false;
+    
+    %% Calibration parameters for wind computation
+    % params were optained by nonlinear optimization of the wind triangle
+    % of flight log 'log_33_2022-7-28-12-55-42' in time interval [530,600]
+    % seconds
+    mass = 1.4;
+    aoa_offset = 0.07;
     wing_area = 0.40;
+    c_0 = 0.3; %0.3564, from semester project GA. Heinrich;
+    c_1 = 2.354; %2.354, from semester project GA. Heinrich;
+    rho = 1.11;
+    aspd_scale_calib = 1.08;
+    c_a0_calib = 0.1558;
+    c_a1_calib = 2.354;
+    c_b1_calib = -3.3248;
     
     min_time = realmin;
     max_time = realmax;
@@ -19,6 +33,7 @@ function SoaringWindPlots(sysvector, topics)
     min_time = max(min_time, sysvector.wind_estimate_0.windspeed_east.Time(1)+1);
     max_time = min(max_time, sysvector.wind_estimate_0.windspeed_east.Time(end)-1);
     time_resampled = min_time:0.1:max_time;
+    len = size(time_resampled,2);
 
     % plot the soaring wind estimate
     q_0 = resample(sysvector.vehicle_attitude_0.q_0, time_resampled);
@@ -48,29 +63,110 @@ function SoaringWindPlots(sysvector, topics)
     R_ned_to_enu(1,2) = 1;
     R_ned_to_enu(2,1) = 1;
     R_ned_to_enu(3,3) = -1;
-    c_0 = 0.3; %0.356;
-    c_1 = 2.3; %2.354;
+    
+    %% solve nonlinear optimization problem on aerodynamic coefficients
+    % An optimal control problem (OCP),
+    % solved with direct multiple-shooting.
+    if (solve_calibration)
+       
+        N = len-1; % number of control intervals
+        opti = casadi.Opti(); % Optimization problem
+
+        % ---- decision variables ---------
+        c_a0 = opti.variable();
+        c_a1 = opti.variable();
+        c_b1 = opti.variable();
+        scale = opti.variable();    %airspeed scaling
+        V_a = opti.variable(3,N+1); % air relative velocity in body frame
+        V_g = opti.variable(3,N+1); % ground velocity in NED frame
+        W = opti.variable(3,1); % wind
+
+        % ---- objective          ---------
+        cost = 0;
+        for i=1:len
+            % cost is the error in the wind triangle
+            R_ib = R_ned_to_enu*R_ib_(:,:,i)';
+            cost = cost + norm(R_ib*V_a(:,i) + W(:,1) - R_ned_to_enu*V_g(:,i));
+        end
+        opti.minimize(cost); 
+
+        % ------- constraints -------------
+        for i=1:len
+            %
+            R_ib = R_ned_to_enu*R_ib_(:,:,i)';
+            R_bi = R_ib';
+            body_force = mass*R_bi*(R_ned_to_enu*[acc_0.Data(i);acc_1.Data(i);acc_2.Data(i)] + [0;0;9.81]);
+
+            % set ground velocity
+            opti.subject_to(V_g(1,i)==vel_0.Data(i));
+            opti.subject_to(V_g(2,i)==vel_1.Data(i));
+            opti.subject_to(V_g(3,i)==vel_2.Data(i));
+            % set body velocity
+            speed = scale*airspeed.Data(i);
+            opti.subject_to(V_a(1,i)==speed);
+            opti.subject_to(0.5*rho*speed*wing_area*c_b1*V_a(2,i)==body_force(2));
+            %opti.subject_to(V_a(0,i)==0);
+            opti.subject_to(0.5*rho*(speed^2)*wing_area*(c_a0 + c_a1*V_a(3,i)/speed)==-body_force(3));
+        end
+
+        opti.subject_to(W(3,1)==0);
+        %opti.subject_to(c_b1==0);
+        %opti.subject_to(c_a0==c_0);
+        opti.subject_to(c_a1==c_1);
+
+        % ---- initial values for solver ---
+        opti.set_initial(c_a0, c_0);
+        opti.set_initial(c_a1, c_1);
+        opti.set_initial(c_b1, 0.0);
+        opti.set_initial(scale, 1.05);
+        for i=1:N+1
+            opti.set_initial(V_a(1,i),airspeed.Data(i));
+            opti.set_initial(V_a(2,i),0);
+            opti.set_initial(V_a(3,i),0);
+            opti.set_initial(V_g(1,i),vel_0.Data(i));
+            opti.set_initial(V_g(2,i),vel_1.Data(i));
+            opti.set_initial(V_g(3,i),vel_2.Data(i));
+        end
+        opti.set_initial(W(1,1),0);
+        opti.set_initial(W(2,1),0);
+        opti.set_initial(W(3,1),0);
+
+        % solve opti
+        opti.solver('ipopt'); % set numerical backend
+        sol = opti.solve();   % actual solve
+        c_a0_calib = sol.value(c_a0)
+        sol.value(c_a1)
+        sol.value(c_b1)
+        sol.value(scale)
+        sol.value(W)
+        
+    end
+    
+    %% compute reconstructed wind states
     for i=1:size(time_resampled,2)
         R_ib = R_ned_to_enu*R_ib_(:,:,i)';
         R_bi = R_ib';
-        body_force = 1.4*R_bi*(R_ned_to_enu*[acc_0.Data(i);acc_1.Data(i);acc_2.Data(i)] + [0;0;9.81]);
+        body_force = mass*R_bi*(R_ned_to_enu*[acc_0.Data(i);acc_1.Data(i);acc_2.Data(i)] + [0;0;9.81]);
         % need to transform forces to wing frame
         Fx = cos(aoa_offset)*body_force(1) - sin(aoa_offset)*body_force(3);
         Fy = body_force(2);
         Fz =  - (sin(aoa_offset)*body_force(1) + cos(aoa_offset)*body_force(3));
-        speed = (airspeed.Data(i))*1.0;
-        c_l = -2*body_force(3)/(1.22*speed*speed*wing_area);
-        alpha = (((2*Fz)/(1.22*wing_area*(max(speed*speed,9*9))+0.001) - c_0)/c_1) / ...
-                        (1 - ((2*Fx)/(1.22*wing_area*(max(speed*speed,9*9))+0.001)/c_1));
-        beta = beta_scaling*Fy;
-        vel_air = R_ib*([speed;tan(beta)*speed;tan(alpha-aoa_offset)*speed]);
+        speed = (airspeed.Data(i))*1.21/1.21;
+        c_l = -2*body_force(3)/(rho*speed*speed*wing_area);
+        alpha = (((2*Fz)/(rho*wing_area*(max(speed*speed,9*9))+0.001) - sol.value(c_a0))/c_1) / ...
+                        (1 - ((2*Fx)/(rho*wing_area*(max(speed*speed,9*9))+0.001)/c_1));
+        speed = aspd_scale_calib*airspeed.Data(i);
+        u = speed;
+        v = body_force(2)/(0.5*rho*speed*wing_area*c_b1_calib);
+        w = (-body_force(3)/(0.5*rho*(speed)*wing_area)-c_a0_calib*speed)/c_a1_calib;
+        vel_air = R_ib*[u;v;w];
         wind = R_ned_to_enu*[vel_0.Data(i);vel_1.Data(i);vel_2.Data(i)] - vel_air;
         C_l = [C_l,c_l];
         aoa = [aoa, alpha];
         wind_x = [wind_x,wind(1)];
         wind_y = [wind_y,wind(2)];
         wind_z = [wind_z,wind(3)];
-        sideslip_force = [sideslip_force,body_force(2)/1.4];
+        sideslip_force = [sideslip_force,body_force(2)/mass];
     end
     if reconstruct
         wind_x = timeseries(wind_x',time_resampled);
@@ -106,22 +202,21 @@ function SoaringWindPlots(sysvector, topics)
     wind_magnitude_2 = sqrt(wind_e.Data.^2 + wind_n.Data.^2);
 
     % compute leastsquares fit for wind triangle to determine wind and pitot scaling
-    len = size(time_resampled,2);
     A = zeros(2*len,4);
     y = zeros(2*len,1);
     for i=1:len
         % compute velocities
         R_ib = R_ned_to_enu*R_ib_(:,:,i)';
         R_bi = R_ib';
-        body_force = 1.4*R_bi*(R_ned_to_enu*[acc_0.Data(i);acc_1.Data(i);acc_2.Data(i)] + [0;0;9.81]);
+        body_force = mass*R_bi*(R_ned_to_enu*[acc_0.Data(i);acc_1.Data(i);acc_2.Data(i)] + [0;0;9.81]);
         % need to transform forces to wing frame
-        Fx = 0; %cos(aoa_offset)*body_force(1) - sin(aoa_offset)*body_force(3);
+        Fx = cos(aoa_offset)*body_force(1) - sin(aoa_offset)*body_force(3);
         Fy = body_force(2);
-        Fz = - cos(aoa_offset)*body_force(3); %-sin(aoa_offset)*body_force(1) - cos(aoa_offset)*body_force(3);
+        Fz = -sin(aoa_offset)*body_force(1) - cos(aoa_offset)*body_force(3);
         speed = (airspeed.Data(i))*1;
-        alpha = (((2*Fz)/(1.22*wing_area*(max(speed*speed,9*9))+0.001) - c_0)/c_1) / ...
-                        (1 - ((2*Fx)/(1.22*wing_area*(max(speed*speed,9*9))+0.001)/c_1));
-        beta = beta_scaling*Fy/speed;
+        alpha = (((2*Fz)/(rho*wing_area*(max(speed*speed,9*9))+0.001) - c_0)/c_1) / ...
+                        (1 - ((2*Fx)/(rho*wing_area*(max(speed*speed,9*9))+0.001)/c_1));
+        beta = 0;
         vel_air = R_ib*([speed;tan(beta)*speed;tan(alpha-aoa_offset)*speed]);
         vel_air_normalized = vel_air/sqrt(vel_air'*vel_air);
         % fill leastsquares matrix
@@ -140,9 +235,9 @@ function SoaringWindPlots(sysvector, topics)
               
     end
     
-    
-    
     x = pinv(A'*A)*A'*y
+   
+    
     
     vel_magnitude = sqrt(vel_0.Data.^2 + vel_1.Data.^2 + vel_2.Data.^2);
     sideslip_fit = sideslip_filt./airspeed.Data;
@@ -181,14 +276,14 @@ function SoaringWindPlots(sysvector, topics)
     grid on;
     plot4 = subplot(2,2,4);
     hold on;
-%     plot(time_resampled, aoa_filt);
-%     xlabel('time (s)');
-%     ylabel('AoA (rad)');
-%     legend('filtered');
-    plot(time_resampled, sideslip_filt);
+    plot(time_resampled, aoa_filt);
     xlabel('time (s)');
-    ylabel('lateral accel (m/s^2)');
-    ylim([-2,2]);
+    ylabel('AoA (rad)');
+    legend('filtered');
+%     plot(time_resampled, sideslip_filt);
+%     xlabel('time (s)');
+%     ylabel('lateral accel (m/s^2)');
+%     ylim([-2,2]);
     grid on;
     
     % link the time axis
