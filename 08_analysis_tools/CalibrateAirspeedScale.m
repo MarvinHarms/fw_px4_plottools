@@ -13,8 +13,8 @@
 %% General Optimization Configuration
 
 % start and end times of the data used
-config.t_st_cal = 0;
-config.t_ed_cal = 10000;
+config.t_st_cal = 351;
+config.t_ed_cal = 750;
 
 % load tube diameter and length from logs (implies these parameters have
 % been previously measured and set to the airframe for the given flight)
@@ -28,14 +28,16 @@ config.tube_params_from_logs = true;
 % - 'techpod-agrofly_drotek'
 config.airframe_pitot_config = 'manual-input';
 
-config.radius_profile_cm = 1;      % radius of profile on which the probe is mounted (sphere or cylinder) [cm]
-config.r_probe_tip_cm = 100;       % length of radial vector from center of profile to probe tip [cm]
-config.theta_probe_tip_deg = 0;    % angle between horizon and radial vector [deg]
-config.tube_dia = 1.5/1000;        % tube diameter [m] !!-this param is overwritten if loading tube params from logs
-config.tube_len = 0.5;             % tube length [m]   !!-this param is overwritten if loading tube params from logs
-config.pitot_type = 1;             % pitot type (drotek pitot = 0; custom pitot = 1)
-config.mount_location = 1;         % 0 = wing (2D cylinder assumption), 1 = nose (3D sphere assumption)
 
+
+config.radius_profile_cm = 5;
+config.r_probe_tip_cm = 28.6;
+config.theta_probe_tip_deg = 0;
+config.tube_dia = 3/1000;          % tube diameter [m]
+config.tube_len = 0.475;            % tube length [m]
+config.pitot_type = 1;             % pitot type (drotek pitot = 0; custom pitot = 1)
+config.mount_location = 1;
+    
 %% Airflow Angles Config
 config.use_airflow_angles = false; % must be false for this script
 
@@ -110,7 +112,7 @@ we0 = mean_raw_wind(1);     % wind speed east [m/s]
 x0 = [wn0; we0; sf0];
 
 % bounds
-lb = [-20; -20; 0.1];
+lb = [-20; -20; 0.5];
 ub = [20; 20; 2];
 
 % ! START do not modify ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !

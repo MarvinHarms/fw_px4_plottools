@@ -16,8 +16,8 @@ clc
 %% General Optimization Configuration
 
 % start and end times of the data used
-config.t_st_cal = 0;
-config.t_ed_cal = 10000;
+config.t_st_cal = 400;
+config.t_ed_cal = 650;
 
 % load tube diameter and length from logs (implies these parameters have
 % been previously measured and set to the airframe for the given flight)
@@ -25,7 +25,7 @@ config.tube_params_from_logs = true;
 
 % If true the logged airflow angles are used, if false the airflow angles
 % are calculated from the raw hall measurements
-config.use_airflow_measurement = false;
+config.use_airflow_measurement = true;
 
 % If the airflow angles are computed from the raw hall measurements this
 % indicates if the logged params are used (true) or the manual inputs are
@@ -56,21 +56,21 @@ config.theta_probe_tip_deg = 0;    % angle between horizon and radial vector [de
 config.tube_dia = 1.5/1000;        % tube diameter [m] !!-this param is overwritten if loading tube params from logs
 config.tube_len = 0.5;             % tube length [m]   !!-this param is overwritten if loading tube params from logs
 config.pitot_type = 1;             % pitot type (drotek pitot = 0; custom pitot = 1)
-config.mount_location = 1;         % 0 = wing (2D cylinder assumption), 1 = nose (3D sphere assumption)
+config.mount_location = 0;         % 0 = wing (2D cylinder assumption), 1 = nose (3D sphere assumption)
 
 %% Airflow Angles Config
 config.cal_hall_aoa_rev = 1;
-config.cal_hall_aoa_p0 = -143564503;
-config.cal_hall_aoa_p1 = -29512516;
-config.cal_hall_aoa_p2 = -31953;
-config.cal_hall_aoa_p3 = -27419;
-config.cal_hall_aoa_id = 50;
+config.cal_hall_aoa_p0 = 62943722;
+config.cal_hall_aoa_p1 = -29432471;
+config.cal_hall_aoa_p2 = 57698;
+config.cal_hall_aoa_p3 = -10655;
+config.cal_hall_aoa_id = 49;
 config.cal_hall_slip_rev = 1;
-config.cal_hall_slip_p0 = 36081038;
-config.cal_hall_slip_p1 = 29965695;
-config.cal_hall_slip_p2 = 141878;
-config.cal_hall_slip_p3 = 19035;
-config.cal_hall_slip_id = 48;
+config.cal_hall_slip_p0 = 106825944;
+config.cal_hall_slip_p1 = -27144586;
+config.cal_hall_slip_p2 = -45294;
+config.cal_hall_slip_p3 = 1557;
+config.cal_hall_slip_id = 50;
 
 config.use_airflow_angles = true; % must be true for this script
 

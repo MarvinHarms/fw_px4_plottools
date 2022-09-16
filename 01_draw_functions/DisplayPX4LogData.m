@@ -11,7 +11,6 @@ function DisplayPX4LogData(sysvector, topics, paramvector, params, plainFileName
     % display GPS data if it was logged
     if plotvector.gpsPlots
         PathTrackingPlots(sysvector, topics);
-        AttitudeTrackingPlots(sysvector, topics);
         GPSPlots(sysvector, topics, fconv_gpsalt, fconv_gpslatlong, plotvector);
     end
 
@@ -43,12 +42,14 @@ function DisplayPX4LogData(sysvector, topics, paramvector, params, plainFileName
 
     % display extended wind estimate
     if plotvector.windPlots
-        SoaringWindPlots(sysvector, topics);
+        SoaringWindPlots(sysvector, topics, paramvector);
         WindPlots(sysvector, topics, plotvector);
+        %SpiralTestPlots(sysvector, topics, plotvector);
     end
 
     % display the controller data
     if plotvector.controlPlots
+        AttitudeTrackingPlots(sysvector, topics);
         ControlPlots(sysvector, topics, paramvector, params, fconv_gpsalt);
     end
 

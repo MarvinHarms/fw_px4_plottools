@@ -8,8 +8,8 @@ min_time = max(min_time, sysvector.soaring_controller_position_0.pos_1.Time(1)+1
 max_time = min(max_time, sysvector.soaring_controller_position_0.pos_1.Time(end)-1);
 time_resampled = min_time:0.1:max_time;
 
-%% true values
-% position
+% %% true values
+% % position
 pos_lat = resample(sysvector.soaring_controller_position_0.pos_1, time_resampled);
 pos_lon = resample(sysvector.soaring_controller_position_0.pos_0, time_resampled);
 pos_alt = resample(sysvector.soaring_controller_position_0.pos_2, time_resampled);
@@ -17,6 +17,13 @@ pos_alt = resample(sysvector.soaring_controller_position_0.pos_2, time_resampled
 vel_lat = resample(sysvector.soaring_controller_position_0.vel_1, time_resampled);
 vel_lon = resample(sysvector.soaring_controller_position_0.vel_0, time_resampled);
 vel_alt = resample(sysvector.soaring_controller_position_0.vel_2, time_resampled);
+% pos_lat = resample(1*sysvector.vehicle_local_position_0.x, time_resampled);
+% pos_lon = resample(1*sysvector.vehicle_local_position_0.y, time_resampled);
+% pos_alt = resample(-1*sysvector.vehicle_local_position_0.z, time_resampled);
+% % velocity
+% vel_lat = resample(1*sysvector.vehicle_local_position_0.x, time_resampled);
+% vel_lon = resample(1*sysvector.vehicle_local_position_0.y, time_resampled);
+% vel_alt = resample(-1*sysvector.vehicle_local_position_0.vz, time_resampled);
 % attitude
 q_0 = resample(sysvector.vehicle_attitude_0.q_0, time_resampled);
 q_1 = resample(sysvector.vehicle_attitude_0.q_1, time_resampled);
@@ -28,7 +35,7 @@ w_1 = time_resampled;   % not really needed, dummy input
 w_2 = time_resampled;   % not really needed, dummy input
 
 %% reference values
-% position
+% % position
 pos_ref_lat = resample(sysvector.soaring_controller_position_setpoint_0.pos_1, time_resampled);
 pos_ref_lon = resample(sysvector.soaring_controller_position_setpoint_0.pos_0, time_resampled);
 pos_ref_alt = resample(sysvector.soaring_controller_position_setpoint_0.pos_2, time_resampled);

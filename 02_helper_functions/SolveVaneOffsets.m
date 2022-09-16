@@ -15,14 +15,17 @@ len_t = length(time_resampled);
 % resample inputs / outputs
 aoa_meas = resample(aoa_meas, time_resampled);
 slip_meas = resample(slip_meas, time_resampled);
-vel_n = resample(sysvector.vehicle_gps_position_0.vel_n_m_s, time_resampled);
-vel_e = resample(sysvector.vehicle_gps_position_0.vel_e_m_s, time_resampled);
-vel_d = resample(sysvector.vehicle_gps_position_0.vel_d_m_s, time_resampled);
-airspeed = resample(sysvector.airspeed_0.true_airspeed_m_s, time_resampled);
+airflow_aoa = resample(sysvector.airflow_aoa_0.aoa_rad, time_resampled);
+airflow_slip = resample(sysvector.airflow_slip_0.slip_rad, time_resampled);
+vel_n = resample(sysvector.vehicle_local_position_0.vx, time_resampled);
+vel_e = resample(sysvector.vehicle_local_position_0.vy, time_resampled);
+vel_d = resample(sysvector.vehicle_local_position_0.vz, time_resampled);
+airspeed = resample(sysvector.airspeed_validated_0.true_airspeed_m_s, time_resampled);
 q_0 = resample(sysvector.vehicle_attitude_0.q_0, time_resampled);
 q_1 = resample(sysvector.vehicle_attitude_0.q_1, time_resampled);
 q_2 = resample(sysvector.vehicle_attitude_0.q_2, time_resampled);
 q_3 = resample(sysvector.vehicle_attitude_0.q_3, time_resampled);
+
 
 % construct body to inertial transform
 Hi2b = quat2dcm([q_0.Data, q_1.Data, q_2.Data, q_3.Data]);
@@ -62,10 +65,24 @@ figure('color','w','name','Airflow Vane Mounting Bias Solution');
 lines_ = lines(7);
 plot_opacity = 0.5;
 
+% apply low-pass filter to angle estimates for smoothing
+cutoff_freq = 1;
+order = 2;
+%%%%%%%%%%%%%%
+Fs = len_t/(tspan(2)-tspan(1));
+nyquist_freq = Fs/2;  % Nyquist frequency
+Wn=cutoff_freq/nyquist_freq;    % non-dimensional frequency
+[filtb,filta]=butter(order,Wn,'low'); % construct the filter
+%%%%%%%%%%%%%%
+aoa_filt = filtfilt(filtb,filta,airflow_aoa.Data);
+slip_filt = filtfilt(filtb,filta,airflow_slip.Data);
+
 result_plots(1) = subplot(3,1,1); hold on; grid on; box on;
 plot(time_resampled, rad2deg(aoa_meas.Data) - xopt(1), 'color', lines_(1,:));
 plot(time_resampled, rad2deg(slip_meas.Data) - xopt(2), 'color', lines_(2,:));
-legend('\alpha + b_\alpha', '\beta + b_\beta');
+plot(time_resampled, rad2deg(aoa_filt) - xopt(1));
+plot(time_resampled, rad2deg(slip_filt) - xopt(2));
+legend('\alpha + b_\alpha', '\beta + b_\beta', '\alpha onboard', '\beta onboard');
 ylabel('Airflow Angles [deg]');
 
 result_plots(2) = subplot(3,1,2); hold on; grid on; box on;

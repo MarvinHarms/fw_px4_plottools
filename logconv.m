@@ -18,6 +18,9 @@ clc;
 clear;
 close all;
 
+% nice latex plotting
+set(0,'defaulttextinterpreter','latex');
+
 addpath(genpath('01_draw_functions'));
 addpath(genpath('02_helper_functions'));
 addpath(genpath('03_kmltoolbox_v2.6'));
@@ -32,7 +35,15 @@ addpath(genpath('08_analysis_tools'));
 % ************************************************************************
 
 % The log file name, no file specifier required
-fileName = 'log_33_2022-7-28-12-55-42';
+fileName = 'log_67_2022-9-6-12-34-14';
+%log_82_2022-9-16-09-53-08
+%EZG5_20211011_Gotthardpass_flight01
+%log_77_2022-9-9-12-15-30
+%log_72_2022-9-9-10-20-56 
+%log_70_2022-9-8-18-19-22
+%log_66_2022-9-6-12-12-22
+%log_67_2022-9-6-12-34-14
+%log_69_2022-9-8-17-54-32
 %log_55_2022-8-24-14-01-52
 %log_57_2022-8-24-14-36-30 
 %log_56_2022-8-24-14-16-44 
@@ -76,8 +87,8 @@ generatePlots = true;
 
 % only plot the logged data from t_start to t_end. If one of them is set to
 % NaN all the logged data is plotted [s].
-t_start = 200;%350
-t_end = 500;%430
+t_start = 330;%350
+t_end = 780;%430
 
 % change topic names or add new topics in the setupTopics function.
 

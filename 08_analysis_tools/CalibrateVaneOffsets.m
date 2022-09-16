@@ -32,8 +32,8 @@
 % otherwise unobservable.
 
 % start and end times (modify these)
-t_st_cal = -1;
-t_ed_cal = 10000;
+t_st_cal = 400;
+t_ed_cal = 650;
 
 % if hall calibration params were not present in the logs, they
 % must be defined here to execute the mounting offset calibration.
@@ -41,20 +41,24 @@ t_ed_cal = 10000;
 %    example for typical calibration values - these will not be
 %    valid for any different vane !!
 
-% aoa
-config.cal_hall_aoa_rev = timeseries(-1, 0);
-config.cal_hall_aoa_p0 = timeseries(-14694678, 0);
-config.cal_hall_aoa_p1 = timeseries(-21239312, 0);
-config.cal_hall_aoa_p2 = timeseries(51980, 0);
-config.cal_hall_aoa_p3 = timeseries(-2845, 0);
-config.cal_hall_aoa_id = timeseries(0, 0);
-% slip
+%% input specific scaling for airspeed (post-analysis scaling of already scaled speed)
+aspd_scale = 1.17;
+%sysvector.airspeed_0.true_airspeed_m_s = aspd_scale*sysvector.airspeed_0.true_airspeed_m_s;
+%sysvector.airspeed_validated_0.true_airspeed_m_s = aspd_scale*sysvector.airspeed_validated_0.true_airspeed_m_s/1.21;
+%
+config.cal_hall_aoa_rev = timeseries(1, 0);
+config.cal_hall_aoa_p0 = timeseries(62943722, 0);
+config.cal_hall_aoa_p1 = timeseries(-29432471, 0);
+config.cal_hall_aoa_p2 = timeseries(57698, 0);
+config.cal_hall_aoa_p3 = timeseries(-10655, 0);
+config.cal_hall_aoa_id = timeseries(49, 0);
 config.cal_hall_slip_rev = timeseries(1, 0);
-config.cal_hall_slip_p0 = timeseries(2696759, 0);
-config.cal_hall_slip_p1 = timeseries(-25891024, 0);
-config.cal_hall_slip_p2 = timeseries(53064, 0);
-config.cal_hall_slip_p3 = timeseries(-7467, 0);
-config.cal_hall_slip_id = timeseries(1, 0);
+config.cal_hall_slip_p0 = timeseries(106825944, 0);
+config.cal_hall_slip_p1 = timeseries(-27144586, 0);
+config.cal_hall_slip_p2 = timeseries(-45294, 0);
+config.cal_hall_slip_p3 = timeseries(1557, 0);
+config.cal_hall_slip_id = timeseries(50, 0);
+
 % general configs
 config.use_cal_av_params = true;
 config.use_airflow_measurement = true;
