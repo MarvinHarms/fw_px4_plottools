@@ -35,7 +35,9 @@ addpath(genpath('08_analysis_tools'));
 % ************************************************************************
 
 % The log file name, no file specifier required
-fileName = 'log_67_2022-9-6-12-34-14';
+fileName = 'log_70_2022-9-8-18-19-22';
+%log_90_2022-9-21-15-44-36
+%log_86_2022-9-21-11-57-56
 %log_82_2022-9-16-09-53-08
 %EZG5_20211011_Gotthardpass_flight01
 %log_77_2022-9-9-12-15-30
@@ -47,8 +49,13 @@ fileName = 'log_67_2022-9-6-12-34-14';
 %log_55_2022-8-24-14-01-52
 %log_57_2022-8-24-14-36-30 
 %log_56_2022-8-24-14-16-44 
-%'log_43_2022-8-21-16-12-48'; 
-%'log_33_2022-7-28-12-55-42'; % 12_23_53, 13_22_34, log_17_2022-6-30-11-42-36, log_17_2022-6-30-11-42-36, log_26_2022-7-14-10-43-18, log_27_2022-7-14-11-21-50
+%log_43_2022-8-21-16-12-48; 
+%log_33_2022-7-28-12-55-42; 
+%12_23_53, 13_22_34
+%log_17_2022-6-30-11-42-36
+%log_17_2022-6-30-11-42-36
+%log_26_2022-7-14-10-43-18
+%log_27_2022-7-14-11-21-50
 
 % The log file location, only required when converting a .ulg file. All
 % .csv files are supposed to be in 05_csv_files, and all .mat files are
@@ -87,8 +94,8 @@ generatePlots = true;
 
 % only plot the logged data from t_start to t_end. If one of them is set to
 % NaN all the logged data is plotted [s].
-t_start = 330;%350
-t_end = 780;%430
+t_start = 350;
+t_end = 550;
 
 % change topic names or add new topics in the setupTopics function.
 
@@ -106,7 +113,7 @@ plotvector.estimatorPlots = false;
 plotvector.estimatorStatusPlots = false;
 plotvector.globalPositionPlots = false;
 plotvector.windPlots = true;
-plotvector.controlPlots = false;
+plotvector.controlPlots = true;
 plotvector.telemRSSIPlots = false;
 plotvector.rawSensorPlots = false;
 plotvector.cpuLoadPlots = false;

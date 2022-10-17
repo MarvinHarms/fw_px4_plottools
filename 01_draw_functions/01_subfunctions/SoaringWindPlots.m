@@ -10,11 +10,11 @@ function SoaringWindPlots(sysvector, topics, paramvector)
         reconstruct = true;
     end
     
-    %% Parameter switche
+    %% Parameter switches
     solve_inertial_calibration = false;
-    
-    %% Parameter switche
     solve_vane_calibration = false;
+    vane_measurements = false;
+
     
     %% Calibration parameters for wind computation (inertial wind estimate)
     % params were optained by nonlinear optimization of the wind triangle
@@ -26,15 +26,15 @@ function SoaringWindPlots(sysvector, topics, paramvector)
     c_0 = 0.3; %0.3564, from semester project GA. Heinrich;
     c_1 = 2.354; %2.354, from semester project GA. Heinrich;
     rho = 1.22; % standard air density at sea level
-    aspd_scale_calib = 0.9570;
-    c_a0_calib = 0.2798;
-    c_a1_calib = 4.3138;
-    c_b1_calib = -0.3;%-3.4646;
-    elev_eff_calib = 0.2;
+    aspd_scale_calib = 1.0%0.9570;
+    c_a0_calib = 0.19;%0.2798;
+    c_a1_calib = 3.6;%4.3138;
+    c_b1_calib = -3.4646;
+    elev_eff_calib = 0.0;
     
     %% Calibration parameters for wind computation (vane wind estimate)
-    aoa_bias_calib = -0.0309;
-    slip_bias_calib = 0.0436;
+    aoa_bias_calib = -0.0311;
+    slip_bias_calib = 0.0438;
     
 %%    calibration log_33_2022-7-28-12-55-42' in time interval [530,600]:
 %     mass = 1.35;
@@ -139,11 +139,12 @@ function SoaringWindPlots(sysvector, topics, paramvector)
 
         opti.subject_to(W(3,1)==0);
         opti.subject_to(c_b1==c_b1_calib);
-        opti.subject_to(c_a0==c_0);
-        opti.subject_to(c_a1==c_1);
-        %opti.subject_to(scale==aspd_scale_calib);
-        opti.subject_to(elev_eff>=0);
-        opti.subject_to(elev_eff<=0.2);
+        %opti.subject_to(c_a0==c_0);
+        opti.subject_to(c_a1==c_a1_calib);
+        opti.subject_to(scale==aspd_scale_calib);
+        opti.subject_to(elev_eff==0);
+        %opti.subject_to(elev_eff>=0);
+        %opti.subject_to(elev_eff<=0.2);
 
         % ---- initial values for solver ---
         opti.set_initial(c_a0, c_0);
@@ -176,15 +177,18 @@ function SoaringWindPlots(sysvector, topics, paramvector)
     end
     
     
+    %% read vane measurements if present
+    if (vane_measurements)
+        %
+        aoa_meas = resample(sysvector.airflow_aoa_0.aoa_rad, time_resampled);
+        slip_meas = resample(sysvector.airflow_slip_0.slip_rad, time_resampled);
+        aoa_meas.Data = -1*aoa_meas.Data;
+    end
+    
     %% solve nonlinear optimization problem for vane offsets
     % An optimal control problem (OCP),
     % solved with direct multiple-shooting.
     if (solve_vane_calibration)
-        
-        %
-        aoa_meas = resample(sysvector.airflow_aoa_0.aoa_rad, time_resampled);
-        slip_meas = resample(sysvector.airflow_slip_0.slip_rad, time_resampled);
-        aoa_meas.Data = -1*aoa_meas.Data
        
         N = len-1; % number of control intervals
         opti = casadi.Opti(); % Optimization problem
@@ -297,7 +301,7 @@ function SoaringWindPlots(sysvector, topics, paramvector)
         wind_z = [wind_z,wind(3)];
         sideslip_force = [sideslip_force,body_force(2)/mass];
         % compute vane wind estimate
-        if solve_vane_calibration
+        if vane_measurements
             u = t_speed;
             v = tan(slip_meas.Data(i)-slip_bias_calib)*t_speed;
             w = tan(aoa_meas.Data(i)-aoa_bias_calib)*t_speed;
@@ -312,7 +316,7 @@ function SoaringWindPlots(sysvector, topics, paramvector)
         wind_x = timeseries(wind_x',time_resampled);
         wind_y = timeseries(wind_y',time_resampled);
         wind_z = timeseries(wind_z',time_resampled);
-        if solve_vane_calibration
+        if vane_measurements
             wind_x_vane = timeseries(wind_x_vane',time_resampled);
             wind_y_vane = timeseries(wind_y_vane',time_resampled);
             wind_z_vane = timeseries(wind_z_vane',time_resampled);
@@ -324,7 +328,7 @@ function SoaringWindPlots(sysvector, topics, paramvector)
     end
     
     % apply low-pass filter to wind estimates for smoothing
-    cutoff_freq = 0.5;
+    cutoff_freq = 1.0;
     order = 2;
     %%%%%%%%%%%%%%
     Fs = size(wind_x.Time,1)/(wind_x.Time(end)-wind_x.Time(1));
@@ -339,67 +343,93 @@ function SoaringWindPlots(sysvector, topics, paramvector)
     slip_filt = filtfilt(filtb,filta,slip);
     aoa_filt = filtfilt(filtb,filta,aoa);
     % filter vane wind estimate
-    if solve_vane_calibration
+    if (vane_measurements)
+        slip_vane_filt = filtfilt(filtb,filta,slip_meas.Data-slip_bias_calib);
+        aoa_vane_filt = filtfilt(filtb,filta,aoa_meas.Data-aoa_bias_calib);
         wind_x_vane_filt = filtfilt(filtb,filta,wind_x_vane.Data);
         wind_y_vane_filt = filtfilt(filtb,filta,wind_y_vane.Data);
         wind_z_vane_filt = filtfilt(filtb,filta,wind_z_vane.Data);
     end
     
     % comppute total magnitude of the wind
-    %wind_magnitude_1 = sqrt(wind_x_filt.^2 + wind_y_filt.^2);
+    wind_magnitude = sqrt(wind_x_filt.^2 + wind_y_filt.^2);
+    wind_heading = 180/pi*(atan2(wind_x_filt,wind_y_filt));
     
-    %vel_magnitude = sqrt(vel_0.Data.^2 + vel_1.Data.^2 + vel_2.Data.^2);
-    %sideslip_fit = sideslip_filt./TAS.Data;
+    
+    % standard wind plots
+    fig0 = figure();
+    fig0.Name = 'Estimated Wind';
+    plot1 = subplot(2,1,1);
+    %plot(time_resampled, wind_magnitude);
+    hold on;
+    plot(time_resampled, wind_x_filt);
+    plot(time_resampled, wind_y_filt);
+    xlabel('time (s)');
+    ylabel('wind speed (m/s)');
+    legend('wind east','wind north');
+    grid on;
+    plot2 = subplot(2,1,2);
+    plot(time_resampled, wind_heading);
+    xlabel('time (s)');
+    ylabel('wind heading (deg)');
+    ylim([-180,180]);
+    grid on;
 
+
+    % ENU wind plots
     fig1 = figure();
     fig1.Name = 'Estimated Wind';
-    plot1 = subplot(2,2,1);
+    plot1 = subplot(3,1,1);
     hold on;
-    plot(time_resampled, wind_x_online.Data);
     plot(time_resampled, wind_x_filt);
-    if solve_vane_calibration
+    if vane_measurements
        plot(time_resampled, wind_x_vane_filt);
-       legend('onboard','dynamic filtered','vanes');
+       legend('dynamic filtered','vanes');
     else
-        legend('onboard','dynamic filtered');
+        legend('dynamic filtered');
     end
     xlabel('time (s)');
     ylabel('wind speed east (m/s)');
     grid on;
     
-    plot2 = subplot(2,2,3);
+    plot2 = subplot(3,1,2);
     hold on;
-    plot(time_resampled, wind_y_online.Data);
     plot(time_resampled, wind_y_filt);
-    if solve_vane_calibration
+    if vane_measurements
        plot(time_resampled, wind_y_vane_filt);
-       legend('onboard','dynamic filtered','vanes');
+       legend('dynamic filtered','vanes');
     else
-        legend('onboard','dynamic filtered');
+        legend('dynamic filtered');
     end
     xlabel('time (s)');
     ylabel('wind speed north (m/s)');
     grid on;
 
-%     plot3_ = subplot(2,2,2);
-%     hold on;
-%     plot(time_resampled, wind_z_online.Data);
-%     plot(time_resampled, wind_z_filt);
-%     if solve_vane_calibration
-%        plot(time_resampled, wind_z_vane_filt);
-%        legend('onboard','dynamic filtered','vanes');
-%     else
-%         legend('onboard','dynamic filtered');
-%     end  
-%     xlabel('time (s)');
-%     ylabel('wind speed vertical (m/s)');
-%     grid on;
+    plot3_ = subplot(3,1,3);
+    hold on;
+    plot(time_resampled, wind_z_filt);
+    if vane_measurements
+       plot(time_resampled, wind_z_vane_filt);
+       legend('dynamic filtered','vanes');
+    else
+        legend('dynamic filtered');
+    end  
+    xlabel('time (s)');
+    ylabel('wind speed vertical (m/s)');
+    grid on;
     
-    plot3_ = subplot(2,2,2);
+    % link the time axis
+    linkaxes([plot1,plot2,plot3_],'x');
+    hold off;
+    
+    % airflow plots
+    fig6 = figure();
+    fig6.Name = 'Airflow Angles';
+    plot2 = subplot(2,1,2);
     hold on;
     plot(time_resampled, slip_filt);
-    if solve_vane_calibration
-        plot(time_resampled, slip_meas.Data);
+    if vane_measurements
+        plot(time_resampled, slip_vane_filt);
         legend('dynamic filtered', 'vane');
     else
         legend('filtered');
@@ -407,12 +437,15 @@ function SoaringWindPlots(sysvector, topics, paramvector)
     xlabel('time (s)');
     ylabel('AoS (rad)');
     grid on;
+    ylim([-0.25,0.25]);
+    a = fill([690,690,750,750], [-0.25,0.25,0.25,-0.25], 'r','Edgecolor','none','HandleVisibility','off');
+    a.FaceAlpha = 0.1;
     
-    plot4 = subplot(2,2,4);
+    plot1 = subplot(2,1,1);
     hold on;
-    plot(time_resampled, aoa_filt);
-    if solve_vane_calibration
-        plot(time_resampled, aoa_meas.Data);
+    plot(time_resampled, aoa_filt+aoa_offset);
+    if vane_measurements
+        plot(time_resampled, aoa_vane_filt+aoa_offset);
         legend('dynamic filtered', 'vane');
     else
         legend('filtered');
@@ -420,9 +453,12 @@ function SoaringWindPlots(sysvector, topics, paramvector)
     xlabel('time (s)');
     ylabel('AoA (rad)');
     grid on;
+    ylim([-0.1,0.25]);
+    a = fill([690,690,750,750], [-0.25,0.25,0.25,-0.25], 'r','Edgecolor','none','HandleVisibility','off');
+    a.FaceAlpha = 0.1;
     
     % link the time axis
-    linkaxes([plot1,plot2,plot3_,plot4],'x');
+    linkaxes([plot1,plot2],'x');
     hold off;
 
     
@@ -434,8 +470,8 @@ function SoaringWindPlots(sysvector, topics, paramvector)
     plot(time_resampled, inertial_speed);
     plot(time_resampled, aspd_scale_calib*TAS.Data);
     plot(time_resampled, aspd_scale_calib*CAS.Data);
-    plot(time_resampled, IAS.Data);
-    legend('GPS', 'TAS scaled', 'CAS scaled', 'IAS');
+    %plot(time_resampled, IAS.Data);
+    legend('GPS', 'TAS scaled', 'CAS scaled');
     grid on;
     hold off;
     
@@ -446,15 +482,18 @@ function SoaringWindPlots(sysvector, topics, paramvector)
     plot3(pos_1.Data(1 : end),pos_0.Data(1 : end),-pos_2.Data(1 : end),'k.');
     axis equal
     hold all
-    text(pos_0.Data(1),pos_1.Data(1),pos_2.Data(1),'t_{min}');
-    text(pos_0.Data(end),pos_1.Data(end),pos_2.Data(end),'t_{max}');
     di = numel(pos_0.Data);
     distep = floor(di/20);
 
     quiver3(pos_1.Data(1 : n : end), pos_0.Data(1 : n : end), -pos_2.Data(1 : n : end),...
             wind_x_filt(1 : n : end), wind_y_filt(1 : n : end), wind_z_filt(1 : n : end), 0, 'r');
-    quiver3(pos_1.Data(2 : n : end), pos_0.Data(2 : n : end), -pos_2.Data(2 : n : end),...
-            wind_x_online.Data(2 : n : end), wind_y_online.Data(2 : n : end), wind_z_online.Data(2 : n : end), 0, 'b');
+%     quiver3(pos_1.Data(2 : n : end), pos_0.Data(2 : n : end), -pos_2.Data(2 : n : end),...
+%             wind_x_online.Data(2 : n : end), wind_y_online.Data(2 : n : end), wind_z_online.Data(2 : n : end), 0, 'b');
+       
+    grid on;
+    xlabel('X (m)');
+    ylabel('Y (m)');
+    zlabel('Z (m)');
     
     % export the wind data to be processed in python
     height = -1*pos_2.Data;

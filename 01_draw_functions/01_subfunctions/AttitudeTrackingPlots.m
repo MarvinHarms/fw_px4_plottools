@@ -47,21 +47,23 @@ function AttitudeTrackingPlots(sysvector, topics)
     hold on;
     %plot(time_resampled, wind_x.Data);
     plot(time_resampled, acc_roll_filt);
-    plot(time_resampled, acc_ref_roll.Data);
+    %plot(time_resampled, acc_ref_roll.Data);
     plot(time_resampled, acc_ref_roll_filt);
     xlabel('time (s)');
-    ylabel('roll acceleration (m/s)');
-    legend('true', 'ref', 'ref filt');
+    ylabel('$\dot p (\frac{1}{s^2})$','Interpreter','latex');
+    legend('true', 'ref');
+    ylim([-20,20]);
     grid on;
     plot2 = subplot(3,1,2);
     hold on;
     %plot(time_resampled, wind_y.Data);
     plot(time_resampled, acc_pitch_filt);
-    plot(time_resampled, acc_ref_pitch.Data);
+    %plot(time_resampled, acc_ref_pitch.Data);
     plot(time_resampled, acc_ref_pitch_filt);
     xlabel('time (s)');
-    ylabel('pitch acceleration (m/s)');
-    legend('true', 'ref', 'ref filt');
+    ylabel('$\dot q (\frac{1}{s^2})$','Interpreter','latex');
+    legend('true', 'ref');
+    ylim([-20,20]);
     grid on;
     plot3 = subplot(3,1,3);
     hold on;
@@ -69,7 +71,7 @@ function AttitudeTrackingPlots(sysvector, topics)
     plot(time_resampled, act_pitch.Data);
     plot(time_resampled, act_yaw.Data);
     xlabel('time (s)');
-    ylabel('actuator deflections (m/s)');
+    ylabel('actuator deflection');
     legend('ailerons', 'elevator','rudder');
     grid on;
 
